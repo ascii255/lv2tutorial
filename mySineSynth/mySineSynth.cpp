@@ -3,29 +3,29 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cmath>
-#include "lv2.h"
+#include <lv2/core/lv2.h>
 #include <lv2/atom/atom.h>
 #include <lv2/urid/urid.h>
 #include <lv2/midi/midi.h>
 #include <lv2/core/lv2_util.h>
 #include <lv2/atom/util.h>
 
-enum ControlPorts
+enum struct CONTROL : uint32_t
 {
-    CONTROL_ATTACK  = 0,
-    CONTROL_DECAY   = 1,
-    CONTROL_SUSTAIN = 2,
-    CONTROL_RELEASE = 3,
-    CONTROL_LEVEL   = 4,
-    CONTROL_NR      = 5
+    ATTACK  = 0,
+    DECAY   = 1,
+    SUSTAIN = 2,
+    RELEASE = 3,
+    LEVEL   = 4,
+    NR      = 5
 };
 
-enum PortGroups
+enum struct PORT : uint32_t
 {
-    PORT_MIDI_IN    = 0,
-    PORT_AUDIO_OUT  = 1,
-    PORT_CONTROL    = 2,
-    PORT_NR         = 3
+    MIDI_IN    = 0,
+    AUDIO_OUT  = 1,
+    CONTROL    = 2,
+    NR         = 3
 };
 
 struct Urids
@@ -33,11 +33,11 @@ struct Urids
     LV2_URID midi_MidiEvent;
 };
 
-enum KeyStatus
+enum struct KEY
 {
-    KEY_OFF,
-    KEY_PRESSED,
-    KEY_RELEASED
+    OFF,
+    PRESSED,
+    RELEASED
 };
 
 struct Envelope
@@ -51,7 +51,7 @@ struct Envelope
 class Key
 {
 private:
-    KeyStatus status;
+    KEY status;
     uint8_t note;
     uint8_t velocity;
     Envelope envelope;
@@ -74,7 +74,7 @@ private:
 };
 
 Key::Key (const double rt) :
-    status (KEY_OFF),
+    status (KEY::OFF),
     note (0),
     velocity (0),
     envelope {0.0, 0.0, 0.0f, 0.0},
@@ -95,44 +95,44 @@ void Key::press (const uint8_t nt, const uint8_t vel, const Envelope env)
     envelope = env;
     freq = pow (2.0, (double (note) - 69.0) / 12.0) * 440.0;
     time = 0.0;
-    status = KEY_PRESSED;
+    status = KEY::PRESSED;
 }
 
-void Key::release (const uint8_t nt, const uint8_t vel)
+void Key::release (const uint8_t nt, const uint8_t /*vel*/)
 {
-    if ((status == KEY_PRESSED) && (note == nt))
+    if ((status == KEY::PRESSED) && (note == nt))
     {
         start_level = adsr ();
         time = 0.0;
-        status = KEY_RELEASED;
+        status = KEY::RELEASED;
     }
 }
 
 void Key::off ()
 {
     position = 0.0;
-    status = KEY_OFF;
+    status = KEY::OFF;
 }
 
 inline float Key::adsr ()
 {
     switch (status)
     {
-    case KEY_PRESSED:
+    case KEY::PRESSED:
         if (time < envelope.attack)
         {
-            return start_level + (1.0f - start_level) * time /envelope.attack;
+            return start_level + (1.0f - start_level) * static_cast<float>(time / envelope.attack);
         }
 
         if (time < envelope.attack + envelope.decay)
         {
-            return 1.0f + (envelope.sustain - 1.0f) * (time - envelope.attack) / envelope.decay;
+            return 1.0f + (envelope.sustain - 1.0f) * static_cast<float>((time - envelope.attack) / envelope.decay);
         }
 
         return envelope.sustain;
 
-    case KEY_RELEASED:
-        return start_level - start_level * time /envelope.release;
+    case KEY::RELEASED:
+        return start_level - start_level * static_cast<float>(time /envelope.release);
     
     default:
         return 0.0f;
@@ -142,15 +142,15 @@ inline float Key::adsr ()
 inline float Key::get ()
 {
     return  adsr() *
-            sin (2.0 * M_PI * position) *
-            (float (velocity) / 127.0f);
+            static_cast<float>(sin (2.0 * M_PI * position)) *
+            (static_cast<float>(velocity) / 127.0f);
 }
 
 inline void Key::proceed ()
 {
     time += 1.0 / rate;
     position += freq / rate;
-    if ((status == KEY_RELEASED) && (time >= envelope.release)) off();
+    if ((status == KEY::RELEASED) && (time >= envelope.release)) off();
 }
 
 /* class definition */
@@ -159,11 +159,10 @@ class MySineSynth
 private:
     const LV2_Atom_Sequence* midi_in_ptr ;
     float* audio_out_ptr;
-    const float* control_ptr[CONTROL_NR];
+    const float* control_ptr[static_cast<uint32_t>(CONTROL::NR)];
     LV2_URID_Map* map ;
     Urids urids;
     double rate;
-    double position;
     Key key;
 
 public:
@@ -181,7 +180,6 @@ MySineSynth::MySineSynth (const double sample_rate, const LV2_Feature *const *fe
     control_ptr {nullptr},
     map (nullptr),
     rate (sample_rate),
-    position (0.0),
     key (rate)
 {
     const char* missing = lv2_features_query
@@ -200,18 +198,18 @@ void MySineSynth::connectPort (const uint32_t port, void* data_location)
 {
     switch (port)
     {
-    case PORT_MIDI_IN:
+    case static_cast<uint32_t>(PORT::MIDI_IN):
         midi_in_ptr = (const LV2_Atom_Sequence*) data_location;
         break;
 
-    case PORT_AUDIO_OUT:
+    case static_cast<uint32_t>(PORT::AUDIO_OUT):
         audio_out_ptr = (float*) data_location;
         break;
     
     default:
-        if (port < PORT_CONTROL + CONTROL_NR)
+        if (port < static_cast<uint32_t>(PORT::CONTROL) + static_cast<uint32_t>(CONTROL::NR))
         {
-            control_ptr[port - PORT_CONTROL] = (const float*) data_location;
+            control_ptr[port - static_cast<uint32_t>(PORT::CONTROL)] = (const float*) data_location;
         }
         break;
     }
@@ -221,7 +219,7 @@ void MySineSynth::play (const uint32_t start, const uint32_t end)
 {
     for (uint32_t i = start; i < end; ++i)
     {
-        audio_out_ptr[i] = key.get() * *control_ptr[CONTROL_LEVEL];
+        audio_out_ptr[i] = key.get() * *control_ptr[static_cast<uint32_t>(CONTROL::LEVEL)];
         key.proceed();
     }
 }
@@ -231,7 +229,7 @@ void MySineSynth::run (const uint32_t sample_count)
     /* check if all ports connected */
     if ((!audio_out_ptr) || (!midi_in_ptr)) return;
 
-    for (int i = 0; i < CONTROL_NR; ++i)
+    for (uint32_t i = 0; i < static_cast<uint32_t>(CONTROL::NR); ++i)
     {
         if (!control_ptr[i]) return;
     }
@@ -241,7 +239,7 @@ void MySineSynth::run (const uint32_t sample_count)
     LV2_ATOM_SEQUENCE_FOREACH (midi_in_ptr, ev)
     {
         /* play frames until event */
-        const uint32_t frame = ev->time.frames;
+        const uint32_t frame = static_cast<uint32_t>(ev->time.frames);
         play (last_frame, frame);
         last_frame = frame;
 
@@ -258,10 +256,10 @@ void MySineSynth::run (const uint32_t sample_count)
                     msg[1] /* note */,
                     msg[2] /* velocity */,
                     {
-                        *control_ptr[CONTROL_ATTACK],
-                        *control_ptr[CONTROL_DECAY],
-                        *control_ptr[CONTROL_SUSTAIN],
-                        *control_ptr[CONTROL_RELEASE]
+                        *control_ptr[static_cast<uint32_t>(CONTROL::ATTACK)],
+                        *control_ptr[static_cast<uint32_t>(CONTROL::DECAY)],
+                        *control_ptr[static_cast<uint32_t>(CONTROL::SUSTAIN)],
+                        *control_ptr[static_cast<uint32_t>(CONTROL::RELEASE)]
                     }
                 );
                 break;
@@ -286,7 +284,7 @@ void MySineSynth::run (const uint32_t sample_count)
 }
 
 /* internal core methods */
-static LV2_Handle instantiate (const struct LV2_Descriptor *descriptor, double sample_rate, const char *bundle_path, const LV2_Feature *const *features)
+static LV2_Handle instantiate (const struct LV2_Descriptor */*descriptor*/, double sample_rate, const char */*bundle_path*/, const LV2_Feature *const *features)
 {
     MySineSynth* m = new MySineSynth (sample_rate, features);
     return m;
@@ -298,7 +296,7 @@ static void connect_port (LV2_Handle instance, uint32_t port, void *data_locatio
     if (m) m->connectPort (port, data_location);
 }
 
-static void activate (LV2_Handle instance)
+static void activate (LV2_Handle /*instance*/)
 {
     /* not needed here */
 }
@@ -309,7 +307,7 @@ static void run (LV2_Handle instance, uint32_t sample_count)
     if (m) m->run (sample_count);
 }
 
-static void deactivate (LV2_Handle instance)
+static void deactivate (LV2_Handle /*instance*/)
 {
     /* not needed here */
 }
@@ -320,7 +318,7 @@ static void cleanup (LV2_Handle instance)
     if (m) delete m;
 }
 
-static const void* extension_data (const char *uri)
+static const void* extension_data (const char */*uri*/)
 {
     return NULL;
 }
@@ -339,7 +337,7 @@ static LV2_Descriptor const descriptor =
 };
 
 /* interface */
-extern "C" LV2_SYMBOL_EXPORT const LV2_Descriptor* lv2_descriptor (uint32_t index)
+LV2_SYMBOL_EXPORT const LV2_Descriptor* lv2_descriptor (uint32_t index)
 {
     if (index == 0) return &descriptor;
     else return NULL;

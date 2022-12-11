@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cmath>
-#include "lv2.h"
+#include <lv2/core/lv2.h>
 
 /* class definition */
 class MyTestTone 
@@ -64,13 +64,13 @@ void MyTestTone::run (const uint32_t sample_count)
 
     for (uint32_t i = 0; i < sample_count; ++i)
     {
-        audio_out_ptr[i] = sin (2.0 * M_PI * position) * *level_ptr;
+        audio_out_ptr[i] = static_cast<float>(sin (2.0 * M_PI * position)) * *level_ptr;
         position += *freq_ptr / rate;
     }
 }
 
 /* internal core methods */
-static LV2_Handle instantiate (const struct LV2_Descriptor *descriptor, double sample_rate, const char *bundle_path, const LV2_Feature *const *features)
+static LV2_Handle instantiate (const LV2_Descriptor */*descriptor*/, double sample_rate, const char */*bundle_path*/, const LV2_Feature *const */*features*/)
 {
     MyTestTone* m = new MyTestTone (sample_rate);
     return m;
@@ -94,7 +94,7 @@ static void run (LV2_Handle instance, uint32_t sample_count)
     if (m) m->run (sample_count);
 }
 
-static void deactivate (LV2_Handle instance)
+static void deactivate (LV2_Handle /*instance*/)
 {
     /* not needed here */
 }
@@ -105,7 +105,7 @@ static void cleanup (LV2_Handle instance)
     if (m) delete m;
 }
 
-static const void* extension_data (const char *uri)
+static const void* extension_data (const char */*uri*/)
 {
     return NULL;
 }
@@ -124,7 +124,7 @@ static LV2_Descriptor const descriptor =
 };
 
 /* interface */
-extern "C" LV2_SYMBOL_EXPORT const LV2_Descriptor* lv2_descriptor (uint32_t index)
+LV2_SYMBOL_EXPORT const LV2_Descriptor* lv2_descriptor (uint32_t index)
 {
     if (index == 0) return &descriptor;
     else return NULL;

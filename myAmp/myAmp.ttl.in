@@ -3,10 +3,13 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix doap: <http://usefulinc.com/ns/doap#> .
 
-<https://github.com/sjaehn/lv2tutorial/myAmp> a lv2:Plugin , lv2:AmplifierPlugin , doap:Project ;
-    lv2:binary <myAmp.so> ;
-    doap:name "MyAmp" ;
+<@PROJECT_HOMEPAGE_URL@>
+    a lv2:Plugin , lv2:AmplifierPlugin , doap:Project ;
+    lv2:binary <@PROJECT_NAME@@CMAKE_SHARED_LIBRARY_SUFFIX@> ;
+    lv2:minorVersion @PROJECT_VERSION_MAJOR@ ;
+    lv2:microVersion @PROJECT_VERSION_MINOR@ ;
     lv2:optionalFeature lv2:hardRTCapable ;
+    doap:name "MyAmp" ;
     
     lv2:port 
         [

@@ -3,7 +3,7 @@
 #include "stdint.h"
 #include "stdlib.h"
 //#include "math.h"
-#include "lv2.h"
+#include "lv2/core/lv2.h"
 
 /* class definition */
 typedef struct 
@@ -15,7 +15,7 @@ typedef struct
 
 
 /* internal core methods */
-static LV2_Handle instantiate (const struct LV2_Descriptor *descriptor, double sample_rate, const char *bundle_path, const LV2_Feature *const *features)
+static LV2_Handle instantiate (const LV2_Descriptor */*descriptor*/, double /*sample_rate*/, const char */*bundle_path*/, const LV2_Feature *const */*features*/)
 {
     MyAmp* m = (MyAmp*) calloc (1, sizeof (MyAmp));
     return m;
@@ -45,7 +45,7 @@ static void connect_port (LV2_Handle instance, uint32_t port, void *data_locatio
     }
 }
 
-static void activate (LV2_Handle instance)
+static void activate (LV2_Handle /*instance*/)
 {
     /* not needed here */
 }
@@ -62,7 +62,7 @@ static void run (LV2_Handle instance, uint32_t sample_count)
     }
 }
 
-static void deactivate (LV2_Handle instance)
+static void deactivate (LV2_Handle /*instance*/)
 {
     /* not needed here */
 }
@@ -74,7 +74,7 @@ static void cleanup (LV2_Handle instance)
     free (m);
 }
 
-static const void* extension_data (const char *uri)
+static const void* extension_data (const char */*uri*/)
 {
     return NULL;
 }
@@ -93,7 +93,7 @@ static LV2_Descriptor const descriptor =
 };
 
 /* interface */
-const LV2_SYMBOL_EXPORT LV2_Descriptor* lv2_descriptor (uint32_t index)
+LV2_SYMBOL_EXPORT const LV2_Descriptor* lv2_descriptor (uint32_t index)
 {
     if (index == 0) return &descriptor;
     else return NULL;

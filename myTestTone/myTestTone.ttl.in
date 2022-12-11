@@ -6,13 +6,13 @@
 @prefix pprops: <http://lv2plug.in/ns/ext/port-props#> .
 
 
-<https://github.com/sjaehn/lv2tutorial/myTestTone> a lv2:Plugin , lv2:OscillatorPlugin , doap:Project ;
-    lv2:binary <myTestTone.so> ;
-    doap:name "myTestTone" ;
+<@PROJECT_HOMEPAGE_URL@>
+    a lv2:Plugin , lv2:OscillatorPlugin , doap:Project ;
+    lv2:binary <@PROJECT_NAME@@CMAKE_SHARED_LIBRARY_SUFFIX@> ;
+    lv2:minorVersion @PROJECT_VERSION_MAJOR@ ;
+    lv2:microVersion @PROJECT_VERSION_MINOR@ ;
     lv2:optionalFeature lv2:hardRTCapable ;
-    lv2:minorVersion 2 ;
-    lv2:microVersion 0 ;
-
+    doap:name "myTestTone" ;
     
     lv2:port 
         [
