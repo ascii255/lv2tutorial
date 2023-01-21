@@ -7,6 +7,8 @@ project(myTestTone
     LANGUAGES CXX
 )
 
+set(OUTPUT_NAME ${PROJECT_NAME})
+
 add_library(${PROJECT_NAME} SHARED)
 add_library(${CMAKE_PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 

@@ -7,6 +7,12 @@ project(lv2tutorial
     LANGUAGES C CXX
 )
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../lv2cmake)
+
+include(LV2)
+
+find_package(LV2Cpp 1.0.7 CONFIG REQUIRED COMPONENTS Plugin GUI)
+
 add_custom_target(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME} PRIVATE
@@ -14,9 +20,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/README.md
 )
 
-set(CMAKE_MODULE_PATH $ENV{HOME}/Developer/lv2cmake)
-
-include(LV2)
+get_property(${PROJECT_NAME}_SOURCES TARGET ${PROJECT_NAME} PROPERTY SOURCES)
+source_group("" FILES ${${PROJECT_NAME}_SOURCES})
 
 add_subdirectory(myAmp)
 add_subdirectory(myTestTone)
